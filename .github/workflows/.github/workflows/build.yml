@@ -1,0 +1,41 @@
+name: Build alt-ime-ahk (v1) to EXE
+
+on:
+  workflow_dispatch: {}    # 手動実行用
+  push:
+    paths:
+      - "alt-ime-ahk.ahk"
+      - ".github/workflows/build.yml"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download AutoHotkey v1 portable
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = "https://www.autohotkey.com/download/1.1/AutoHotkey_1.1.36.02.zip"
+          $zip = "$env:RUNNER_TEMP\ahk.zip"
+          Invoke-WebRequest $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\ahk" -Force
+
+      - name: Compile to EXE with Ahk2Exe
+        shell: pwsh
+        run: |
+          $compiler = Join-Path $env:RUNNER_TEMP 'ahk\Compiler\Ahk2Exe.exe'
+          $baseBin  = Join-Path $env:RUNNER_TEMP 'ahk\Compiler\Unicode 64-bit.bin'
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          & $compiler /in "alt-ime-ahk.ahk" /out "dist\alt-ime-ahk.exe" /base "$baseBin"
+          Write-Host "Built: dist\alt-ime-ahk.exe"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alt-ime-ahk-exe
+          path: dist/alt-ime-ahk.exe
+          if-no-files-found: error
