@@ -1,7 +1,7 @@
 name: Build alt-ime-ahk (v1) to EXE
 
 on:
-  workflow_dispatch: {}    # 手動実行用
+  workflow_dispatch: {}
   push:
     paths:
       - "alt-ime-ahk.ahk"
@@ -15,20 +15,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Download AutoHotkey v1 portable
+      # Chocolatey で AutoHotkey v1 portable をインストール
+      - name: Install AutoHotkey v1 portable via Chocolatey
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $url = "https://www.autohotkey.com/download/1.1/AutoHotkey_1.1.36.02.zip"
-          $zip = "$env:RUNNER_TEMP\ahk.zip"
-          Invoke-WebRequest $url -OutFile $zip
-          Expand-Archive -Path $zip -DestinationPath "$env:RUNNER_TEMP\ahk" -Force
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+          choco install autohotkey.portable --version=1.1.36.02 -y
 
+      # Ahk2Exe のパスを探して .ahk → .exe に変換
       - name: Compile to EXE with Ahk2Exe
         shell: pwsh
         run: |
-          $compiler = Join-Path $env:RUNNER_TEMP 'ahk\Compiler\Ahk2Exe.exe'
-          $baseBin  = Join-Path $env:RUNNER_TEMP 'ahk\Compiler\Unicode 64-bit.bin'
+          $pkg = Get-ChildItem 'C:\ProgramData\chocolatey\lib' -Filter 'autohotkey*' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $compiler = Join-Path $pkg.FullName 'tools\Compiler\Ahk2Exe.exe'
+          $baseBin  = Join-Path $pkg.FullName 'tools\Compiler\Unicode 64-bit.bin'
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           & $compiler /in "alt-ime-ahk.ahk" /out "dist\alt-ime-ahk.exe" /base "$baseBin"
           Write-Host "Built: dist\alt-ime-ahk.exe"
