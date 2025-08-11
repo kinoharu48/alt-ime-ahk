@@ -116,6 +116,7 @@ LAlt up::
     if (A_PriorHotkey == "*~LAlt")
     {
         IME_SET(0)
+        Sleep, 100  ; ← ここで100ミリ秒待つ（80〜150で調整可）
     }
     Return
 
@@ -124,5 +125,7 @@ RAlt up::
     if (A_PriorHotkey == "*~RAlt")
     {
         IME_SET(1)
+        Sleep, 100  ; ← ここで100ミリ秒待つ（80〜150で調整可）
     }
     Return
+
